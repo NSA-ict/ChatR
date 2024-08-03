@@ -93,7 +93,7 @@
         const sheetId = '16buKEt4UZVubRMkVURRIVbfAUXjiMHBmhUUNLMw1JLQ'; // Replace with your Google Sheet ID
         const apiKey = 'AIzaSyBGP0su_B0on_PmPEVLBTSOxur6FdaNCFY'; // Replace with your API key
 
-        const limit = 1000; // Limit of messages
+        const limit = 1000; // Limit of messages to 1000
 
         function fetchMessages() {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:C${limit}?key=${apiKey}`;
@@ -110,19 +110,18 @@
             const messagesContainer = document.getElementById('messages');
             messagesContainer.innerHTML = '';
 
-            messages.forEach((message, index) => {
+            messages.forEach((message) => {
                 const [name, description, link] = message;
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message');
 
                 const nameElement = document.createElement('div');
                 nameElement.classList.add('name');
-');
                 nameElement.textContent = name;
 
                 const timeElement = document.createElement('div');
                 timeElement.classList.add('time');
-                const timestamp = new Date();
+                const timestamp = new Date(); // Use current time as timestamp
                 timeElement.textContent = timestamp.toLocaleString(); // Display formatted timestamp
 
                 const descriptionElement = document.createElement('div');
