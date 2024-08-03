@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        #chat-room {
+            width: 80%;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #messages {
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .time {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .description {
+            margin: 5px 0;
+        }
+
+        .link {
+            color: blue;
+            text-decoration: underline;
+        }
+
+        #input-section {
+            margin-top: 20px;
+        }
+
+        #input-section input, #input-section button {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 16px;
+        }
+
+        #input-section button {
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #input-section button:hover {
+            background: darkblue;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="chat-room">
+        <div id="messages"></div>
+        <div id="input-section">
+            <input type="text" id="name" placeholder="Your Name">
+            <input type="text" id="description" placeholder="Message">
+            <input type="text" id="link" placeholder="Link">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const sheetId = '16buKEt4UZVubRMkVURRIVbfAUXjiMHBmhUUNLMw1JLQ'; // Replace with your Google Sheet ID
+        const apiKey = 'AIzaSyBGP0su_B0on_PmPEVLBTSOxur6FdaNCFY'; // Replace with your API key
+
+        const limit = 1000; // Limit of messages
+
+        function fetchMessages() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:C${limit}?key=${apiKey}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const messages = data.values || [];
+                    displayMessages(messages);
+                });
+        }
+
+        function displayMessages(messages) {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = '';
+
+            messages.forEach((message, index) => {
+                const [name, description, link] = message;
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+
+                const nameElement = document.createElement('div');
+                nameElement.classList.add('name');
+');
+                nameElement.textContent = name;
+
+                const timeElement = document.createElement('div');
+                timeElement.classList.add('time');
+                const timestamp = new Date();
+                timeElement.textContent = timestamp.toLocaleString(); // Display formatted timestamp
+
+                const descriptionElement = document.createElement('div');
+                descriptionElement.classList.add('description');
+                descriptionElement.textContent = description;
+
+                const linkElement = document.createElement('a');
+                linkElement.classList.add('link');
+                linkElement.href = link;
+                linkElement.textContent = link;
+                linkElement.target = '_blank';
+
+                messageElement.appendChild(nameElement);
+                messageElement.appendChild(timeElement);
+                messageElement.appendChild(descriptionElement);
+                messageElement.appendChild(linkElement);
+
+                messagesContainer.appendChild(messageElement);
+            });
+
+            // Scroll to the bottom of the chat
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const link = document.getElementById('link').value;
+
+            if (!name || !description || !link) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const data = {
+                values: [
+                    [name, description, link]
+                ]
+            };
+
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:C1:append?valueInputOption=RAW&key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(response => response.json())
+              .then(result => {
+                  if(result.updates) {
+                      fetchMessages(); // Refresh messages
+                      document.getElementById('name').value = '';
+                      document.getElementById('description').value = '';
+                      document.getElementById('link').value = '';
+                  }
+              });
+        }
+
+        // Initial call to fetch messages
+        fetchMessages();
+
+        // Refresh messages every 10 seconds
+        setInterval(fetchMessages, 10000);
+    </script>
+
+</body>
+</html>
