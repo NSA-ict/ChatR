@@ -54,6 +54,10 @@
             text-decoration: underline;
         }
 
+        .actions {
+            margin-top: 10px;
+        }
+
         #input-section {
             margin-top: 20px;
         }
@@ -91,12 +95,13 @@
 
     <script>
         const sheetId = '16buKEt4UZVubRMkVURRIVbfAUXjiMHBmhUUNLMw1JLQ'; // Replace with your Google Sheet ID
-        const apiKey = 'AIzaSyBGP0su_B0on_PmPEVLBTSOxur6FdaNCFY'; // Replace with your API key
+        const apiKey = 'AIzaSyBGP0su_B0on_PmPEVLBTSOxur6FdaNCFY'; 
 
-        const limit = 1000; // Limit of messages to 1000
+// Replace with your API key
+        const sheetName = 'Sheet1'; // Replace with your sheet name if different
 
         function fetchMessages() {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:C${limit}?key=${apiKey}`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:D?key=${apiKey}`;
             
             fetch(url)
                 .then(response => response.json())
@@ -110,8 +115,8 @@
             const messagesContainer = document.getElementById('messages');
             messagesContainer.innerHTML = '';
 
-            messages.forEach((message) => {
-                const [name, description, link] = message;
+            messages.forEach((message, index) => {
+                const [name, description, link, timestamp] = message;
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message');
 
@@ -121,8 +126,7 @@
 
                 const timeElement = document.createElement('div');
                 timeElement.classList.add('time');
-                const timestamp = new Date(); // Use current time as timestamp
-                timeElement.textContent = timestamp.toLocaleString(); // Display formatted timestamp
+                timeElement.textContent = new Date(timestamp).toLocaleString();
 
                 const descriptionElement = document.createElement('div');
                 descriptionElement.classList.add('description');
@@ -134,10 +138,25 @@
                 linkElement.textContent = link;
                 linkElement.target = '_blank';
 
+                const actionsElement = document.createElement('div');
+                actionsElement.classList.add('actions');
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteMessage(index + 2); // +2 because Google Sheets is 1-indexed, and we skip the header
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.onclick = () => editMessage(index + 2, name, description, link);
+
+                actionsElement.appendChild(editButton);
+                actionsElement.appendChild(deleteButton);
+
                 messageElement.appendChild(nameElement);
                 messageElement.appendChild(timeElement);
                 messageElement.appendChild(descriptionElement);
                 messageElement.appendChild(linkElement);
+                messageElement.appendChild(actionsElement);
 
                 messagesContainer.appendChild(messageElement);
             });
@@ -150,6 +169,7 @@
             const name = document.getElementById('name').value;
             const description = document.getElementById('description').value;
             const link = document.getElementById('link').value;
+            const timestamp = new Date().toISOString();
 
             if (!name || !description || !link) {
                 alert('Please fill in all fields');
@@ -158,11 +178,11 @@
 
             const data = {
                 values: [
-                    [name, description, link]
+                    [name, description, link, timestamp]
                 ]
             };
 
-            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:C1:append?valueInputOption=RAW&key=${apiKey}`, {
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:D2:append?valueInputOption=RAW&key=${apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -177,6 +197,45 @@
                       document.getElementById('link').value = '';
                   }
               });
+        }
+
+        function deleteMessage(rowNumber) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A${rowNumber}:D${rowNumber}?key=${apiKey}`;
+            const data = {
+                range: `${sheetName}!A${rowNumber}:D${rowNumber}`,
+                majorDimension: 'ROWS',
+                values: [['', '', '', '']]
+            };
+
+            fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(() => fetchMessages());
+        }
+
+        function editMessage(rowNumber, name, description, link) {
+            const newName = prompt('Edit name:', name);
+            const newDescription = prompt('Edit message:', description);
+            const newLink = prompt('Edit link:', link);
+
+            if (newName !== null && newDescription !== null && newLink !== null) {
+                const data = {
+                    values: [
+                        [newName, newDescription, newLink, new Date().toISOString()]
+                    ]
+                };
+
+                fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A${rowNumber}:D${rowNumber}?valueInputOption=RAW&key=${apiKey}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(() => fetchMessages());
+            }
         }
 
         // Initial call to fetch messages
